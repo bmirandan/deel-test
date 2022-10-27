@@ -76,8 +76,8 @@ app.post('/jobs/:job_id/pay', getProfile, async (req, res) => {
                 id: job_id,
                 paid: { [Op.not]: true },
                 price: { [Op.lte]: balance },
-                include: { model: Contract, where: { ContractorId: idProfile } }
-            }
+            },
+            include: { model: Contract, where: { ContractorId: idProfile } }
         })
         if (!job) throw new Error('Job not found!')
         await job.update({ paid: true }, { transaction })
