@@ -89,8 +89,8 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
  */
 
 app.post('/jobs/:job_id/pay', getProfile, async (req, res) => {
-    const { Job, Contract } = req.app.get('models')
-    const { id: idProfile, balance } = req.profile
+    const { Job, Contract, Profile } = req.app.get('models')
+    const { balance } = req.profile
     const { job_id } = req.params
     const transaction = await sequelize.transaction();
     try {
@@ -100,13 +100,22 @@ app.post('/jobs/:job_id/pay', getProfile, async (req, res) => {
                 paid: { [Op.not]: true },
                 price: { [Op.lte]: balance },
             },
-            include: { model: Contract, where: { ContractorId: idProfile } }
+            include: {
+                model: Contract,
+                include: {
+                    model: Profile,
+                    as: 'Contractor',
+                    where: {
+                        type: 'contractor',
+                    }
+                }
+            }
         })
         if (!job) throw new Error('Job not found!')
         await job.update({ paid: true }, { transaction })
-        await req.profile.update({ balance: balance - job.price }, { transaction })
+        await job.Contract.Contractor.update({ balance: balance - job.price }, { transaction })
         await transaction.commit();
-        res.json(job)
+        res.json({message: "Payment successful!"})
     }
     catch (err) {
         console.error(err.message) // probably a logger should be used
@@ -215,7 +224,7 @@ app.get('/admin/best-clients', async (req, res) => {
                 include: {
                     raw: true,
                     model: Profile,
-                    attributes: { exclude: ['id', 'createdAt', 'updatedAt'] },
+                    attributes: { exclude: ['createdAt', 'updatedAt'] },
                     where: { type: 'client' },
                     as: 'Client'
                 },
