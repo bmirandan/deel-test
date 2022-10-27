@@ -201,7 +201,7 @@ app.get('/admin/best-profession', async (req, res) => {
 app.get('/admin/best-clients', async (req, res) => {
     try {
         const { Job, Contract, Profile } = req.app.get('models')
-        const { start = '2020-08-03', end = '2020-08-15', limit = 1 } = req.query
+        const { start, end, limit = 1 } = req.query
         const clients = await Job.findAll({
             attributes: [
                 [sequelize.fn('sum', sequelize.col('price')), 'paid']
@@ -213,7 +213,7 @@ app.get('/admin/best-clients', async (req, res) => {
                 model: Contract,
                 attributes: ['ClientId'],
                 include: {
-                    raw:true,
+                    raw: true,
                     model: Profile,
                     attributes: { exclude: ['id', 'createdAt', 'updatedAt'] },
                     where: { type: 'client' },
