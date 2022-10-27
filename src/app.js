@@ -42,7 +42,7 @@ app.get('/contracts', getProfile, async (req, res) => {
 })
 
 /**
- * @returns unpaid jobs
+ * @returns all unpaid jobs of a profile
  */
 
 app.get('/jobs/unpaid', getProfile, async (req, res) => {
@@ -64,6 +64,10 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
     if (!jobs) return res.status(404).end()
     res.json(jobs)
 })
+
+/**
+ * @returns paid a job
+ */
 
 app.post('/jobs/:job_id/pay', getProfile, async (req, res) => {
     const { Job, Contract } = req.app.get('models')
@@ -90,6 +94,45 @@ app.post('/jobs/:job_id/pay', getProfile, async (req, res) => {
         return res.status(500).end()
     }
 })
+/**
+ * @returns deposit to client balance 
+ */
+
+app.post('/balances/deposit/:userId', async (req, res) => {
+    const { Job, Contract, Profile } = req.app.get('models')
+    const { userId } = req.params
+    const { amount } = req.body
+    if(!amount){return res.status(401).end()}
+    const transaction = await sequelize.transaction();
+    try {
+        const profile = await Profile.findOne({ where: { id: userId, type: 'client' } })
+        if (!profile) throw new Error('Profile not found!')
+        const jobs = await Job.findAll({
+            where: {
+                paid: { [Op.not]: true },
+            },
+            include: {
+                model: Contract,
+                where: {
+                    ClientId: userId,
+                    status: { [Op.not]: 'terminated' }
+                }
+            }
+        })
+        const totalJobs = jobs.reduce((acc, job) => acc + job.price, 0)
+        if (amount > totalJobs * 0.25) throw new Error('Amount is too high!')
+        await profile.update({ balance: profile.balance + amount }, { transaction })
+        await transaction.commit();
+        res.json(profile)
+    }
+    catch (err) {
+        console.error(err.message) // probably a logger should be used
+        await transaction.rollback()
+        return res.status(500).end()
+    }
+})
+
+
 
 
 
