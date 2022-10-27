@@ -141,26 +141,31 @@ async function seed() {
       description: 'work',
       price: 200,
       ContractId: 1,
+      paid: false
     }),
     Job.create({
       description: 'work',
       price: 201,
       ContractId: 2,
+      paid: false
     }),
     Job.create({
       description: 'work',
       price: 202,
       ContractId: 3,
+      paid: false
     }),
     Job.create({
       description: 'work',
       price: 200,
       ContractId: 4,
+      paid: false
     }),
     Job.create({
       description: 'work',
       price: 200,
       ContractId: 7,
+      paid: false
     }),
     Job.create({
       description: 'work',

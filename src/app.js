@@ -40,12 +40,12 @@ app.get('/contracts', getProfile, async (req, res) => {
 })
 
 app.get('/jobs/unpaid', getProfile, async (req, res) => {
-    const { Jobs, Contract } = req.app.get('models')
+    const { Job, Contract } = req.app.get('models')
     const { id: idProfile } = req.profile
-    const contract = await Jobs.findAll({
+    const jobs = await Job.findAll({
         where:
         {
-            paid: false
+            paid: { [Op.not]: true },
         },
         include: {
             model: Contract,
@@ -55,8 +55,8 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
             }
         }
     })
-    if (!contract) return res.status(404).end()
-    res.json(contract)
+    if (!jobs) return res.status(404).end()
+    res.json(jobs)
 })
 
 module.exports = app;
