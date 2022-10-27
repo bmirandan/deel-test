@@ -122,5 +122,9 @@ It would be great for example if you'd write some unit test / simple frontend de
 When you have finished the assignment, create a github repository and send us the link.
 
   
+## TODO
+
+- Propper error handler. Maybe a middleware. Or some report platform.
+- Modularization of code. its all in one app without any concerns separations.
 
 Thank you and good luck! 🙏

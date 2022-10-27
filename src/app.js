@@ -162,7 +162,7 @@ app.post('/balances/deposit/:userId', async (req, res) => {
 app.get('/admin/best-profession', async (req, res) => {
     try {
         const { Job, Contract, Profile } = req.app.get('models')
-        const { start = '2020-08-03', end = '2020-08-15' } = req.query
+        const { start, end } = req.query
 
         const jobs = await Job.findAll({
             raw: true,
@@ -193,6 +193,48 @@ app.get('/admin/best-profession', async (req, res) => {
         return res.status(500).end()
     }
 })
+
+/**
+ * @returns best client 
+ */
+
+app.get('/admin/best-clients', async (req, res) => {
+    try {
+        const { Job, Contract, Profile } = req.app.get('models')
+        const { start = '2020-08-03', end = '2020-08-15', limit = 1 } = req.query
+        const clients = await Job.findAll({
+            attributes: [
+                [sequelize.fn('sum', sequelize.col('price')), 'paid']
+            ],
+            where: {
+                paymentDate: { [Op.between]: [start, end] }
+            },
+            include: {
+                model: Contract,
+                attributes: ['ClientId'],
+                include: {
+                    raw:true,
+                    model: Profile,
+                    attributes: { exclude: ['id', 'createdAt', 'updatedAt'] },
+                    where: { type: 'client' },
+                    as: 'Client'
+                },
+            },
+            group: ['Contract.Client.firstName'],
+            order: [[sequelize.fn('sum', sequelize.col('price')), 'DESC']],
+            limit: limit
+        })
+        const bestClients = clients.map(client => { return { ...client.Contract.Client.dataValues, paid: client.paid } })
+        res.json({ bestClients })
+    }
+    catch (err) {
+        console.error(err.message)
+        return res.status(500).end()
+    }
+})
+
+
+
 
 
 module.exports = app;
