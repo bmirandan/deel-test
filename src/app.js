@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { sequelize } = require('./model')
+const { sequelize } = require('./models/index.js');
 const { Op } = require("sequelize");
 const { getProfile } = require('./middleware/getProfile');
 const app = express();
@@ -49,7 +49,7 @@ app.get('/contracts', getProfile, async (req, res) => {
         if (!contract) return res.status(404).end()
         res.json(contract)
     } catch (error) {
-        console.error(err.message) // probably a logger should be used
+        console.error(error.message) // probably a logger should be used
         res.status(500).end()
     }
 })
@@ -111,11 +111,11 @@ app.post('/jobs/:job_id/pay', getProfile, async (req, res) => {
                 }
             }
         })
-        if (!job) throw new Error('Job not found!')
+        if (!job) throw new Error('Job already paid or not enough balance to pay')
         await job.update({ paid: true }, { transaction })
         await job.Contract.Contractor.update({ balance: balance - job.price }, { transaction })
         await transaction.commit();
-        res.json({message: "Payment successful!"})
+        res.json({ message: "Payment successful!" })
     }
     catch (err) {
         console.error(err.message) // probably a logger should be used
@@ -149,13 +149,14 @@ app.post('/balances/deposit/:userId', async (req, res) => {
                 }
             },
             raw: true,
-            attributes: [[sequelize.fn('sum', sequelize.col('price')), 'sum']]
+            attributes: [[sequelize.fn('sum', sequelize.col('price')), 'sum']],
+            transaction
         })
         const totalJobs = jobsSum[0].sum
         if (amount > totalJobs * 0.25) throw new Error('Amount is too high!')
         await profile.update({ balance: profile.balance + amount }, { transaction })
         await transaction.commit();
-        res.json({ message: "Balance updated!!" })
+        res.json({ message: "Balance updated!!" , profile})
     }
     catch (err) {
         console.error(err.message) // probably a logger should be used
@@ -231,7 +232,7 @@ app.get('/admin/best-clients', async (req, res) => {
             },
             group: ['Contract.Client.firstName'],
             order: [[sequelize.fn('sum', sequelize.col('price')), 'DESC']],
-            limit: limit
+            limit: limit,
         })
         const bestClients = clients.map(client => { return { ...client.Contract.Client.dataValues, paid: client.paid } })
         res.json({ bestClients })
